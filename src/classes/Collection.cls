@@ -1,5 +1,5 @@
 /**
- * Collection util class allowing collections manipulation
+ * Library allowing collection manipulations in APEX which helps in reducing conditional for loops.
  *
  * @author Michał Woźniak
  */
