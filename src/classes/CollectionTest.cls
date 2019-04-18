@@ -2,6 +2,30 @@
 private class CollectionTest {
 	
 	@IsTest
+	static void should_filter_eq_then_map_sum() {
+		Decimal sum = Collection.of(getList())
+			.filterBy()
+			.field(Account.Name).eq('Foo')
+			.mapBy()
+			.field(Account.AnnualRevenue)
+			.sum();
+		System.assertEquals(310.0, sum);
+	}
+	
+	@IsTest
+	static void should_filter_lt_then_map_average() {
+		Decimal average = Collection.of(getList())
+			.filterBy()
+			.field(Account.AnnualRevenue)
+			.lt(100)
+			.mapBy()
+			.field(Account.AnnualRevenue)
+			.average();
+		System.assertEquals(60.0, average);
+	}
+	
+	
+	@IsTest
 	static void should_group_by_field() {
 		Map<Object, List<Account>> found = Collection.of(getList())
 			.groupBy()
@@ -14,6 +38,26 @@ private class CollectionTest {
 			System.assertEquals(3, accounts.size());
 			for (Account account : accounts) {
 				System.assertEquals(account.Name, accountName);
+			}
+		}
+	}
+	
+	@IsTest
+	static void should_filter_then_group_by_field() {
+		Map<Object, List<Account>> found = Collection.of(getList())
+			.filterBy()
+			.ignoreNonPopulatedFields()
+			.field(Account.BillingStreet).isNotNull()
+			.groupBy()
+			.field(Account.BillingStreet)
+			.get();
+		System.assertEquals(2, found.keySet().size());
+		for (Object accountBillingStreet : found.keySet()) {
+			System.assert(accountBillingStreet == 'Narutowicza' || accountBillingStreet == '3 Maja');
+			List<Account> accounts = found.get(accountBillingStreet);
+			System.assertEquals(1, accounts.size());
+			for (Account account : accounts) {
+				System.assertEquals(account.BillingStreet, accountBillingStreet);
 			}
 		}
 	}
@@ -160,7 +204,7 @@ private class CollectionTest {
 				.field(Account.Name)
 				.sum();
 		} catch (Exception e) {
-			System.assertEquals('Unsupported type for Decimal', e.getMessage());
+			System.assert(e.getMessage().contains('Invalid string format for Decimal'));
 		}
 	}
 	

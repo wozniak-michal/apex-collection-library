@@ -34,15 +34,15 @@ public inherited sharing class Collection {
 	}
 	
 	/**
-	 * Enables to execute grouping operations
+	 * Allows execute grouping operations
 	 *
 	 * @return
 	 */
-	public CollectionGroupBy groupBy() {
-		return new CollectionGroupByImpl(collection);
+	public CollectionGroup groupBy() {
+		return new CollectionGroupImpl(collection);
 	}
 	
-	public interface CollectionGroupBy {
+	public interface CollectionGroup {
 		/**
 		 * Groups collection by given field
 		 *
@@ -50,10 +50,10 @@ public inherited sharing class Collection {
 		 *
 		 * @return
 		 */
-		CollectionGroupByResult field(SObjectField field);
+		CollectionGroupResult field(SObjectField field);
 	}
 	
-	public interface CollectionGroupByResult {
+	public interface CollectionGroupResult {
 		/**
 		 * Returns Map containing result of previous grouping calls
 		 *
@@ -62,8 +62,13 @@ public inherited sharing class Collection {
 		Map<Object, List<SObject>> get();
 	}
 	
+	/**
+	 * Allows execute mapping operations
+	 *
+	 * @return
+	 */
 	public CollectionMap mapBy() {
-		return new CollectionMapByImpl(collection);
+		return new CollectionMapImpl(collection);
 	}
 	
 	public interface CollectionMap {
@@ -75,23 +80,8 @@ public inherited sharing class Collection {
 		 *
 		 * @return
 		 */
-		CollectionMapPredicate field(SObjectField field);
-	}
-	
-	public interface CollectionMapPredicate {
-		/**
-		 * Returns sum of given collection field
-		 *
-		 * @return sum value
-		 */
-		Decimal sum();
+		CollectionMapResult field(SObjectField field);
 		
-		/**
-		 * Returns average of given collection field
-		 *
-		 * @return average value
-		 */
-		Decimal average();
 	}
 
 	public interface CollectionMapResult {
@@ -111,7 +101,7 @@ public inherited sharing class Collection {
 	}
 	
 	/**
-	 * Enables to execute filtering operations
+	 * Allows execute filtering operations
 	 *
 	 * @return
 	 */
@@ -190,6 +180,21 @@ public inherited sharing class Collection {
 	}
 	
 	public interface CollectionFilterResult {
+		
+		/**
+		 * Chains mapping operation with all previous filtering calls
+		 *
+		 * @return
+		 */
+		CollectionMap mapBy();
+		
+		/**
+		 * Chains grouping operation with all previous filtering calls
+		 *
+		 * @return
+		 */
+		CollectionGroup groupBy();
+		
 		/**
 		 * Chains next filtering predicate with AND condition
 		 *
@@ -239,8 +244,16 @@ public inherited sharing class Collection {
 			this.predicateCollection = new PredicateCollection(collection);
 		}
 		
+		public CollectionMap mapBy() {
+			return new CollectionMapImpl(collection, predicateCollection);
+		}
+		
+		public CollectionGroup groupBy() {
+			return new CollectionGroupImpl(collection, predicateCollection);
+		}
+		
 		public CollectionFilter ignoreNonPopulatedFields() {
-			this.predicateCollection.ignoreNonPopulatedFields = true;
+			this.predicateCollection.ignoreNonPopulatedFields();
 			return this;
 		}
 		
@@ -323,25 +336,31 @@ public inherited sharing class Collection {
 		}
 	}
 	
-	private class CollectionGroupByImpl implements CollectionGroupBy, CollectionGroupByResult {
+	private class CollectionGroupImpl implements CollectionGroup, CollectionGroupResult {
 		
 		private final Iterable<SObject> collection;
+		private final PredicateCollection predicateCollection;
 		private SObjectField field;
 		
-		public CollectionGroupByImpl(Iterable<SObject> collection) {
+		public CollectionGroupImpl(Iterable<SObject> collection) {
 			this.collection = collection;
+			this.predicateCollection = new PredicateCollection(collection);
 		}
 		
-		public CollectionGroupByResult field(SObjectField field) {
+		public CollectionGroupImpl(Iterable<SObject> collection, PredicateCollection predicateCollection) {
+			this.collection = collection;
+			this.predicateCollection = predicateCollection;
+		}
+		
+		public CollectionGroupResult field(SObjectField field) {
 			this.field = field;
 			return this;
 		}
 		
 		public Map<Object, List<SObject>> get() {
 			final Map<Object, List<SObject>> values = new Map<Object, List<SObject>>();
-			Iterator<SObject> collectionIterator = this.collection.iterator();
-			while (collectionIterator.hasNext()) {
-				SObject collectionObject = (SObject) collectionIterator.next();
+			final List<SObject> predicateCollection = this.predicateCollection.process(-1);
+			for (SObject collectionObject : predicateCollection) {
 				Object key = collectionObject.get(field);
 				List<SObject> objectList = values.get(key);
 				if (objectList == null) {
@@ -355,46 +374,43 @@ public inherited sharing class Collection {
 	}
 	
 	
-	private class CollectionMapByImpl implements CollectionMap, CollectionMapPredicate, CollectionMapResult {
+	private class CollectionMapImpl implements CollectionMap, CollectionMapResult {
 		
 		private final Iterable<SObject> collection;
 		private final PredicateCollection predicateCollection;
 		private SObjectField field;
 		
-		public CollectionMapByImpl(Iterable<SObject> collection) {
+		public CollectionMapImpl(Iterable<SObject> collection) {
 			this.collection = collection;
 			this.predicateCollection = new PredicateCollection(collection);
 		}
 		
-		public CollectionMapPredicate field(SObjectField field) {
+		public CollectionMapImpl(Iterable<SObject> collection, PredicateCollection predicateCollection) {
+			this.collection = collection;
+			this.predicateCollection = predicateCollection;
+		}
+		
+		public CollectionMapResult field(SObjectField field) {
 			this.field = field;
 			return this;
 		}
 		
 		public Decimal sum() {
-			final List<SObject> filteredCollection = this.predicateCollection.process(-1);
+			final List<SObject> predicateCollection = this.predicateCollection.process(-1);
 			Decimal sum = 0.0;
-			for (SObject collectionObject : filteredCollection) {
-				try {
-					sum += getDecimal(collectionObject.get(field));
-				} catch (Exception e) {
-					throw new CollectionException(e.getMessage());
-				}
+			for (SObject collectionObject : predicateCollection) {
+				sum += getDecimal(collectionObject.get(field));
 			}
 			return sum;
 		}
 		
 		public Decimal average() {
-			final List<SObject> filteredCollection = this.predicateCollection.process(-1);
+			final List<SObject> predicateCollection = this.predicateCollection.process(-1);
 			Decimal average = 0.0;
 			Integer count = 0;
-			for (SObject collectionObject : filteredCollection) {
-				try {
-					average += getDecimal(collectionObject.get(field));
-					count++;
-				} catch (Exception e) {
-					throw new CollectionException(e.getMessage());
-				}
+			for (SObject collectionObject : predicateCollection) {
+				average += getDecimal(collectionObject.get(field));
+				count++;
 			}
 			return (count > 0) ? (average / count) : 0;
 		}
@@ -482,9 +498,13 @@ public inherited sharing class Collection {
 				}
 				
 				for (SObjectField field : fieldNodes.keySet()) {
-					if (!ignoreNonPopulatedFields && checkPopulatedField(populatedObjectFields, field) == false) {
-						throw new CollectionException(
-							'Field ' + field.getDescribe().getName() + ' seems to be not populated or does not exists');
+					
+					if (!ignoreNonPopulatedFields) {
+						String fieldName = field.getDescribe().getName();
+						if (!populatedObjectFields.containsKey(fieldName)) {
+							throw new CollectionException(
+								'Field ' + field.getDescribe().getName() + ' seems to be not populated or does not exists');
+						}
 					}
 					
 					for (PredicateNode node : fieldNodes.get(field)) {
@@ -581,14 +601,16 @@ public inherited sharing class Collection {
 		else if (value instanceof Decimal) {
 			return (Decimal)value;
 		}
+		else if (value instanceof String) {
+			try {
+				return Decimal.valueOf((String)value);
+			} catch (Exception e) {
+				throw new CollectionException('Invalid string format for Decimal: ' + value);
+			}
+		}
 		else {
 			throw new CollectionException('Unsupported type for Decimal');
 		}
-	}
-	
-	private static Boolean checkPopulatedField(Map<String,Object> populatedFields, SObjectField field) {
-		String fieldName = field.getDescribe().getName();
-		return populatedFields.containsKey(fieldName);
 	}
 	
 	private static Integer compare(Object first, Object second) {
