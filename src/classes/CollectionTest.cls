@@ -133,6 +133,38 @@ private class CollectionTest {
 	}
 	
 	@IsTest
+	static void should_map_sum_field() {
+		Decimal sum = Collection.of(getList())
+			.mapBy()
+			.field(Account.AnnualRevenue)
+			.sum();
+		
+		System.assertEquals(620.0, sum);
+	}
+	
+	@IsTest
+	static void should_map_average_field() {
+		Decimal average = Collection.of(getList())
+			.mapBy()
+			.field(Account.AnnualRevenue)
+			.average();
+		
+		System.assertEquals(103.333333333333333333333333333333, average);
+	}
+	
+	@IsTest
+	static void should_throw_field_not_supported_for_sum() {
+		try {
+			Collection.of(getList())
+				.mapBy()
+				.field(Account.Name)
+				.sum();
+		} catch (Exception e) {
+			System.assertEquals('Unsupported type for Decimal', e.getMessage());
+		}
+	}
+	
+	@IsTest
 	static void should_throw_field_not_populated_or_not_exist_collection_exception() {
 		try {
 			Collection.of(getList()).filterBy()

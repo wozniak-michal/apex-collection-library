@@ -62,6 +62,54 @@ public inherited sharing class Collection {
 		Map<Object, List<SObject>> get();
 	}
 	
+	public CollectionMap mapBy() {
+		return new CollectionMapByImpl(collection);
+	}
+	
+	public interface CollectionMap {
+		
+		/**
+		 * Maps collection by given field
+		 *
+		 * @param field to map collection
+		 *
+		 * @return
+		 */
+		CollectionMapPredicate field(SObjectField field);
+	}
+	
+	public interface CollectionMapPredicate {
+		/**
+		 * Returns sum of given collection field
+		 *
+		 * @return sum value
+		 */
+		Decimal sum();
+		
+		/**
+		 * Returns average of given collection field
+		 *
+		 * @return average value
+		 */
+		Decimal average();
+	}
+
+	public interface CollectionMapResult {
+		/**
+		 * Returns sum of given collection field
+		 *
+		 * @return sum value
+		 */
+		Decimal sum();
+		
+		/**
+		 * Returns average of given collection field
+		 *
+		 * @return average value
+		 */
+		Decimal average();
+	}
+	
 	/**
 	 * Enables to execute filtering operations
 	 *
@@ -166,9 +214,11 @@ public inherited sharing class Collection {
 		/**
 		 * Returns List containing results of all previous filtering calls
 		 *
+		 * @param resultLimit
+		 *
 		 * @return filtered SObject List
 		 */
-		List<SObject> get(Integer resultLimit);
+		List<SObject> get(Long resultLimit);
 		
 		/**
 		 * Returns first found result of all previous filtering calls
@@ -181,173 +231,96 @@ public inherited sharing class Collection {
 	private class CollectionFilterImpl implements CollectionFilterResult, CollectionFilter, CollectionFilterPredicate {
 		
 		private final Iterable<SObject> collection;
-		private final Map<SObjectField, List<CollectionFilterNode>> fieldNodes;
-		private CollectionFilterNode node;
-		private Boolean ignoreNonPopulatedFields = false;
+		private final PredicateCollection predicateCollection;
+		private SObjectField field;
 		
 		public CollectionFilterImpl(Iterable<SObject> collection) {
 			this.collection = collection;
-			this.fieldNodes = new Map<SObjectField, List<CollectionFilterNode>>();
-			this.node = new CollectionFilterNode();
+			this.predicateCollection = new PredicateCollection(collection);
 		}
 		
 		public CollectionFilter ignoreNonPopulatedFields() {
-			this.ignoreNonPopulatedFields = true;
+			this.predicateCollection.ignoreNonPopulatedFields = true;
 			return this;
 		}
 		
 		public CollectionFilterPredicate field(SObjectField field) {
-			this.node.field = field;
+			this.field = field;
 			return this;
 		}
 		
-		public CollectionFilterResult eq(Object value) {
-			this.node.value = value;
-			this.node.operation = BooleanOperation.EQUAL;
-			return addNode(this.node);
-		}
-		
-		public CollectionFilterResult ne(Object value) {
-			this.node.value = value;
-			this.node.operation = BooleanOperation.NOT_EQUAL;
-			return addNode(this.node);
-		}
-		
-		public CollectionFilterResult gt(Object value) {
-			this.node.value = value;
-			this.node.operation = BooleanOperation.GREATER_THAN;
-			return addNode(this.node);
-		}
-		
-		public CollectionFilterResult gte(Object value) {
-			this.node.value = value;
-			this.node.operation = BooleanOperation.GREATER_THAN_OR_EQUAL;
-			return addNode(this.node);
-		}
-		
-		public CollectionFilterResult lt(Object value) {
-			this.node.value = value;
-			this.node.operation = BooleanOperation.LESS_THAN;
-			return addNode(this.node);
-		}
-		
-		public CollectionFilterResult lte(Object value) {
-			this.node.value = value;
-			this.node.operation = BooleanOperation.LESS_THAN_OR_EQUAL;
-			return addNode(this.node);
-		}
-		
-		public CollectionFilterResult isNull() {
-			this.node.value = null;
-			this.node.operation = BooleanOperation.EQUAL;
-			return addNode(this.node);
-		}
-		
-		public CollectionFilterResult isNotNull() {
-			this.node.value = null;
-			this.node.operation = BooleanOperation.NOT_EQUAL;
-			return addNode(this.node);
-		}
-		
-		public CollectionFilterResult isIn(/*Set<> */Object values) {
-			this.node.value = values;
-			this.node.operation = BooleanOperation.IS_IN;
-			return addNode(this.node);
-		}
-		
-		public CollectionFilterResult isNotIn(/*Set<> */Object values) {
-			this.node.value = values;
-			this.node.operation = BooleanOperation.IS_NOT_IN;
-			return addNode(this.node);
-		}
-		
 		public CollectionFilter orElse() {
-			this.node.relation = BooleanRelation.OR_ELSE;
+			this.predicateCollection.orElse();
 			return this;
 		}
 		
 		public CollectionFilter andAlso() {
-			this.node.relation = BooleanRelation.AND_ALSO;
+			this.predicateCollection.andAlso();
+			return this;
+		}
+		
+		public CollectionFilterResult eq(Object value) {
+			this.predicateCollection.eq(field, value);
+			return this;
+		}
+		
+		public CollectionFilterResult ne(Object value) {
+			this.predicateCollection.ne(field, value);
+			return this;
+		}
+		
+		public CollectionFilterResult gt(Object value) {
+			this.predicateCollection.gt(field, value);
+			return this;
+		}
+		
+		public CollectionFilterResult gte(Object value) {
+			this.predicateCollection.gte(field, value);
+			return this;
+		}
+		
+		public CollectionFilterResult lt(Object value) {
+			this.predicateCollection.lt(field, value);
+			return this;
+		}
+		
+		public CollectionFilterResult lte(Object value) {
+			this.predicateCollection.lte(field, value);
+			return this;
+		}
+		
+		public CollectionFilterResult isNull() {
+			this.predicateCollection.eq(field, null);
+			return this;
+		}
+		
+		public CollectionFilterResult isNotNull() {
+			this.predicateCollection.ne(field, null);
+			return this;
+		}
+		
+		public CollectionFilterResult isIn(/*Set<Object>*/Object values) {
+			this.predicateCollection.isIn(field, values);
+			return this;
+		}
+		
+		public CollectionFilterResult isNotIn(/*Set<Object>*/Object values) {
+			this.predicateCollection.isNotIn(field, values);
 			return this;
 		}
 		
 		public SObject getFirst() {
-			List<SObject> objects = process(1);
+			List<SObject> objects = this.predicateCollection.process(1);
 			return !objects.isEmpty() ? objects[0] : null;
 		}
 		
 		public List<SObject> get() {
-			return process(-1);
+			return this.predicateCollection.process(-1);
 		}
 		
-		public List<SObject> get(Integer resultLimit) {
-			return process(resultLimit);
+		public List<SObject> get(Long resultLimit) {
+			return this.predicateCollection.process(resultLimit);
 		}
-		
-		private List<SObject> process(Integer valuesLimit) {
-			List<SObject> values = new List<SObject>();
-			Iterator<SObject> collectionIterator = this.collection.iterator();
-			
-			while (collectionIterator.hasNext() && valuesLimit != 0) {
-				SObject collectionObject = (SObject) collectionIterator.next();
-				Boolean isMatching = true;
-				
-				Map<String, Object> populatedObjectFields;
-				if (!ignoreNonPopulatedFields) {
-					populatedObjectFields = collectionObject.getPopulatedFieldsAsMap();
-				}
-				
-				for (SObjectField field : fieldNodes.keySet()) {
-					if (!ignoreNonPopulatedFields && checkPopulatedField(populatedObjectFields, field) == false) {
-						throw new CollectionException(
-							'Field ' + field.getDescribe().getName() + ' seems to be not populated or does not exists');
-					}
-					
-					for (CollectionFilterNode node : fieldNodes.get(field)) {
-						isMatching = consumeNode(collectionObject, node, isMatching);
-					}
-				}
-				if (isMatching) {
-					values.add(collectionObject);
-					valuesLimit--;
-				}
-			}
-			return values;
-		}
-		
-		private Boolean consumeNode(SObject collectionObject, CollectionFilterNode node, Boolean isMatchingYet) {
-			Boolean isMatching;
-			if (node.operation == BooleanOperation.IS_IN ||
-				node.operation == BooleanOperation.IS_NOT_IN) {
-				isMatching = containsOperation(collectionObject, node);
-			} else {
-				isMatching = compareOperation(collectionObject, node);
-			}
-			switch on node.relation {
-				when AND_ALSO { return isMatchingYet && isMatching; }
-				when OR_ELSE  { return isMatchingYet || isMatching; }
-				when else     { return isMatchingYet && isMatching; }
-			}
-		}
-		
-		private CollectionFilterResult addNode(CollectionFilterNode node) {
-			SObjectField field = node.field;
-			List<CollectionFilterNode> nodes = this.fieldNodes.get(field);
-			if (nodes == null) {
-				nodes = new List<CollectionFilterNode> { node };
-				this.fieldNodes.put(field, nodes);
-			}
-			nodes.add(node);
-			this.node = new CollectionFilterNode();
-			return this;
-		}
-	}
-	
-	private class CollectionFilterNode {
-		public SObjectField field { get; set; }
-		public Object value { get; set; }
-		public BooleanOperation operation { get; set; }
-		public BooleanRelation relation { get; set; }
 	}
 	
 	private class CollectionGroupByImpl implements CollectionGroupBy, CollectionGroupByResult {
@@ -380,35 +353,242 @@ public inherited sharing class Collection {
 			return values;
 		}
 	}
-
+	
+	
+	private class CollectionMapByImpl implements CollectionMap, CollectionMapPredicate, CollectionMapResult {
+		
+		private final Iterable<SObject> collection;
+		private final PredicateCollection predicateCollection;
+		private SObjectField field;
+		
+		public CollectionMapByImpl(Iterable<SObject> collection) {
+			this.collection = collection;
+			this.predicateCollection = new PredicateCollection(collection);
+		}
+		
+		public CollectionMapPredicate field(SObjectField field) {
+			this.field = field;
+			return this;
+		}
+		
+		public Decimal sum() {
+			final List<SObject> filteredCollection = this.predicateCollection.process(-1);
+			Decimal sum = 0.0;
+			for (SObject collectionObject : filteredCollection) {
+				try {
+					sum += getDecimal(collectionObject.get(field));
+				} catch (Exception e) {
+					throw new CollectionException(e.getMessage());
+				}
+			}
+			return sum;
+		}
+		
+		public Decimal average() {
+			final List<SObject> filteredCollection = this.predicateCollection.process(-1);
+			Decimal average = 0.0;
+			Integer count = 0;
+			for (SObject collectionObject : filteredCollection) {
+				try {
+					average += getDecimal(collectionObject.get(field));
+					count++;
+				} catch (Exception e) {
+					throw new CollectionException(e.getMessage());
+				}
+			}
+			return (count > 0) ? (average / count) : 0;
+		}
+	}
+	
+	/**
+	 * Predicate Collection
+	 */
+	private class PredicateCollection {
+		
+		private final Iterable<SObject> collection;
+		private final Set<PredicateNode> predicateNodes;
+		private BooleanRelation relation;
+		private Boolean ignoreNonPopulatedFields = false;
+		
+		public PredicateCollection(Iterable<SObject> collection) {
+			this.collection = collection;
+			this.predicateNodes = new Set<PredicateNode>();
+		}
+		
+		public PredicateCollection ignoreNonPopulatedFields() {
+			this.ignoreNonPopulatedFields = true;
+			return this;
+		}
+		
+		public PredicateCollection eq(SObjectField field, Object value) {
+			return this.addPredicate(new PredicateNode(field, value, BooleanOperation.EQUAL, relation));
+		}
+		
+		public PredicateCollection ne(SObjectField field, Object value) {
+			return this.addPredicate(new PredicateNode(field, value, BooleanOperation.NOT_EQUAL, relation));
+		}
+		
+		public PredicateCollection gt(SObjectField field, Object value) {
+			return this.addPredicate(new PredicateNode(field, value, BooleanOperation.GREATER_THAN, relation));
+		}
+		
+		public PredicateCollection gte(SObjectField field, Object value) {
+			return this.addPredicate(new PredicateNode(field, value, BooleanOperation.GREATER_THAN_OR_EQUAL, relation));
+		}
+		
+		public PredicateCollection lt(SObjectField field, Object value) {
+			return this.addPredicate(new PredicateNode(field, value, BooleanOperation.LESS_THAN, relation));
+		}
+		
+		public PredicateCollection lte(SObjectField field, Object value) {
+			return this.addPredicate(new PredicateNode(field, value, BooleanOperation.LESS_THAN_OR_EQUAL, relation));
+		}
+		
+		public PredicateCollection isIn(SObjectField field, Object value) {
+			return this.addPredicate(new PredicateNode(field, value, BooleanOperation.IS_IN, relation));
+		}
+		
+		public PredicateCollection isNotIn(SObjectField field, Object value) {
+			return this.addPredicate(new PredicateNode(field, value, BooleanOperation.IS_NOT_IN, relation));
+		}
+		
+		public PredicateCollection orElse() {
+			this.relation = BooleanRelation.OR_ELSE;
+			return this;
+		}
+		
+		public PredicateCollection andAlso() {
+			this.relation = BooleanRelation.AND_ALSO;
+			return this;
+		}
+		
+		private PredicateCollection addPredicate(PredicateNode node) {
+			this.predicateNodes.add(node);
+			return this;
+		}
+		
+		public List<SObject> process(Long valuesLimit) {
+			final Map<SObjectField, List<PredicateNode>> fieldNodes = this.groupNodesByField();
+			final List<SObject> values = new List<SObject>();
+			final Iterator<SObject> iterator = this.collection.iterator();
+			
+			while (iterator.hasNext() && valuesLimit != 0) {
+				SObject collectionObject = (SObject) iterator.next();
+				Boolean isMatching = true;
+				
+				Map<String, Object> populatedObjectFields;
+				if (!ignoreNonPopulatedFields) {
+					populatedObjectFields = collectionObject.getPopulatedFieldsAsMap();
+				}
+				
+				for (SObjectField field : fieldNodes.keySet()) {
+					if (!ignoreNonPopulatedFields && checkPopulatedField(populatedObjectFields, field) == false) {
+						throw new CollectionException(
+							'Field ' + field.getDescribe().getName() + ' seems to be not populated or does not exists');
+					}
+					
+					for (PredicateNode node : fieldNodes.get(field)) {
+						isMatching = processNode(collectionObject, node, isMatching);
+					}
+				}
+				if (isMatching) {
+					values.add(collectionObject);
+					valuesLimit--;
+				}
+			}
+			return values;
+		}
+		
+		private Map<SObjectField, List<PredicateNode>> groupNodesByField() {
+			final Map<SObjectField, List<PredicateNode>> values = new Map<SObjectField, List<PredicateNode>>();
+			for (PredicateNode predicateNode : predicateNodes) {
+				List<PredicateNode> nodes = values.get(predicateNode.field);
+				if (nodes == null) {
+					nodes = new List<PredicateNode>();
+					values.put(predicateNode.field, nodes);
+				}
+				nodes.add(predicateNode);
+			}
+			return values;
+		}
+		
+		private Boolean processNode(SObject nodeObject, PredicateNode node, Boolean isMatchingYet) {
+			Boolean isMatching;
+			if (node.operation == BooleanOperation.IS_IN ||
+				node.operation == BooleanOperation.IS_NOT_IN) {
+				isMatching = containsOperation(nodeObject, node);
+			} else {
+				isMatching = compareOperation(nodeObject, node);
+			}
+			switch on node.relation {
+				when AND_ALSO { return isMatchingYet && isMatching; }
+				when OR_ELSE  { return isMatchingYet || isMatching; }
+				when else     { return isMatchingYet && isMatching; }
+			}
+		}
+		
+		private Boolean compareOperation(SObject nodeObject, PredicateNode node) {
+			final Integer result = compare(nodeObject.get(node.field), node.value);
+			switch on node.operation {
+				when EQUAL { return result == 0; }
+				when NOT_EQUAL { return result != 0; }
+				when LESS_THAN { return result < 0; }
+				when LESS_THAN_OR_EQUAL { return result <= 0; }
+				when GREATER_THAN { return result > 0; }
+				when GREATER_THAN_OR_EQUAL { return result >= 0; }
+				when else { return false; }
+			}
+		}
+		
+		private Boolean containsOperation(SObject nodeObject, PredicateNode node) {
+			final Boolean result = contains(node.value, nodeObject.get(node.field));
+			switch on node.operation {
+				when IS_IN { return result == true; }
+				when IS_NOT_IN { return result == false; }
+				when else { return false; }
+			}
+		}
+	}
+	private class PredicateNode {
+		public SObjectField field { get; set; }
+		public Object value { get; set; }
+		public BooleanOperation operation { get; set; }
+		public BooleanRelation relation { get; set; }
+		
+		public PredicateNode() { }
+		
+		public PredicateNode(SObjectField field, Object value, BooleanOperation operation, BooleanRelation relation) {
+			this.field = field;
+			this.value = value;
+			this.operation = operation;
+			this.relation = relation;
+		}
+	}
+	
 	/*
 	 * Common methods
 	 */
+	private static Decimal getDecimal(Object value) {
+		if (value instanceof Integer) {
+			return Decimal.valueOf((Integer)value);
+		}
+		else if (value instanceof Long) {
+			return Decimal.valueOf((Long)value);
+		}
+		else if (value instanceof Double) {
+			return (Decimal)value;
+		}
+		else if (value instanceof Decimal) {
+			return (Decimal)value;
+		}
+		else {
+			throw new CollectionException('Unsupported type for Decimal');
+		}
+	}
+	
 	private static Boolean checkPopulatedField(Map<String,Object> populatedFields, SObjectField field) {
 		String fieldName = field.getDescribe().getName();
 		return populatedFields.containsKey(fieldName);
-	}
-	
-	private static Boolean compareOperation(SObject collectionObject, CollectionFilterNode node) {
-		final Integer result = compare(collectionObject.get(node.field), node.value);
-		switch on node.operation {
-			when EQUAL { return result == 0; }
-			when NOT_EQUAL { return result != 0; }
-			when LESS_THAN { return result < 0; }
-			when LESS_THAN_OR_EQUAL { return result <= 0; }
-			when GREATER_THAN { return result > 0; }
-			when GREATER_THAN_OR_EQUAL { return result >= 0; }
-			when else { return false; }
-		}
-	}
-	
-	private static Boolean containsOperation(SObject collectionObject, CollectionFilterNode node) {
-		final Boolean result = contains(node.value, collectionObject.get(node.field));
-		switch on node.operation {
-			when IS_IN { return result == true; }
-			when IS_NOT_IN { return result == false; }
-			when else { return false; }
-		}
 	}
 	
 	private static Integer compare(Object first, Object second) {

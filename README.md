@@ -1,4 +1,4 @@
-# Apex Collection Util
+# Apex Collection Library
 Library allowing collection manipulations in APEX which helps in reducing conditional `for` loops.\
 The main goal is to provide all the functionality without much overhead in a standalone class.
 
@@ -37,6 +37,14 @@ List<Account> filteredAccounts = Collection.of(accountList)
 	.getFirst();
 ```
 
+Get top 10 accounts which `AnnualRevenue` field is less or equal than `100000`
+```$xslt
+List<Account> filteredAccounts = Collection.of(accountList)
+	.filterBy()
+	.field(Account.Name).lte('100000')
+	.get(10);
+```
+
 Ignore non populated `Website` field (effectively treating them as `null`)
 ```$xslt
 List<Account> filteredAccounts = Collection.of(accountList)
@@ -55,6 +63,22 @@ Map<Object, List<Account>> groupedAccounts = Collection.of(accountList)
 	.get();
 ```
 
+### Mapping
+Sum accounts `AnnualRevenue` field values
+```$xslt
+Decimal sum = Collection.of(getList())
+	.mapBy()
+	.field(Account.AnnualRevenue)
+	.sum();
+```
+
+Average accounts `AnnualRevenue` field values
+```$xslt
+Decimal sum = Collection.of(getList())
+	.mapBy()
+	.field(Account.AnnualRevenue)
+	.average();
+```
 ## Considerations
 ### Set and Map does not implement Iterable interface
 Sets and Maps are not supported
