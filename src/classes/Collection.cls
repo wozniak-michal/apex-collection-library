@@ -1,5 +1,5 @@
 /**
- * Library allowing collection manipulations in APEX which helps in reducing conditional for loops.
+ * Library allowing SObject collection manipulations in APEX which helps in reducing conditional for loops.
  *
  * @author Michał Woźniak
  */
@@ -14,11 +14,11 @@ public inherited sharing class Collection {
 	}
 
 	/**
-	 * Wraps Iterable into new Collection class
+	 * Wraps {@code Iterable<SObject>} into new {@code Collection}
 	 *
 	 * @param collection
 	 *
-	 * @return wrapped collection
+	 * @return wrapped {@code Iterable<SObject>}
 	 */
 	public static Collection of(Iterable<SObject> collection) {
 		return new Collection(collection);
@@ -27,18 +27,16 @@ public inherited sharing class Collection {
 	/**
 	 * Returns original underlying collection
 	 *
-	 * @return Iterable original collection
+	 * @return {@code Iterable<SObject>} collection
 	 */
 	public Iterable<SObject> getCollection() {
 		return collection;
 	}
 	
 	/**
-	 * Allows execute grouping operations
-	 *
-	 * @return
+	 * Allows execution of grouping operations
 	 */
-	public CollectionGroup groupBy() {
+	public CollectionGroup group() {
 		return new CollectionGroupImpl(collection);
 	}
 	
@@ -47,53 +45,50 @@ public inherited sharing class Collection {
 		 * Groups collection by given field
 		 *
 		 * @param field to group collection
-		 *
-		 * @return
 		 */
-		CollectionGroupResult field(SObjectField field);
+		CollectionGroupResult byField(SObjectField field);
 	}
 	
 	public interface CollectionGroupResult {
 		/**
-		 * Returns Map containing result of previous grouping calls
+		 * Returns Map containing results of previous grouping calls
 		 *
-		 * @return
+		 * map key   - contains unique values of given field
+		 * map value - contains list of {@code SObject}'s
+		 *
+		 * @return grouped map for given field
 		 */
 		Map<Object, List<SObject>> get();
 	}
 	
 	/**
-	 * Allows execute mapping operations
-	 *
-	 * @return
+	 * Allows execution of mapping operations
 	 */
-	public CollectionMap mapBy() {
-		return new CollectionMapImpl(collection);
+	public CollectionReduce reduce() {
+		return new CollectionReduceImpl(collection);
 	}
 	
-	public interface CollectionMap {
+	public interface CollectionReduce {
 		
 		/**
-		 * Maps collection by given field
+		 * Reduces collection by given field
 		 *
 		 * @param field to map collection
-		 *
-		 * @return
 		 */
-		CollectionMapResult field(SObjectField field);
+		CollectionReduceResult byField(SObjectField field);
 		
 	}
 
-	public interface CollectionMapResult {
+	public interface CollectionReduceResult {
 		/**
-		 * Returns sum of given collection field
+		 * Returns sum of given {@code SObject} field
 		 *
 		 * @return sum value
 		 */
 		Decimal sum();
 		
 		/**
-		 * Returns average of given collection field
+		 * Returns average of given {@code SObject} field
 		 *
 		 * @return average value
 		 */
@@ -101,19 +96,15 @@ public inherited sharing class Collection {
 	}
 	
 	/**
-	 * Allows execute filtering operations
-	 *
-	 * @return
+	 * Allows execution of filtering operations
 	 */
-	public CollectionFilter filterBy() {
+	public CollectionFilter filter() {
 		return new CollectionFilterImpl(collection);
 	}
 	
 	public interface CollectionFilter {
 		/**
 		* Disables checks for non populated fields in all further filtering calls
-		*
-		* @return
 		*/
 		CollectionFilter ignoreNonPopulatedFields();
 		
@@ -121,60 +112,66 @@ public inherited sharing class Collection {
 		 * Filters collection by given field
 		 *
 		 * @param field to filter collection
-		 *
-		 * @return
 		 */
-		CollectionFilterPredicate field(SObjectField field);
+		CollectionFilterPredicate byField(SObjectField field);
 	}
 	
 	public interface CollectionFilterPredicate {
 		/**
-		 * Equals Predicate with given value
+		 * Appends equals predicate with given value
 		 */
 		CollectionFilterResult eq(Object value);
 		
 		/**
-		 * Not Equal Predicate with given value
+		 * Appends not equals predicate with given value
 		 */
 		CollectionFilterResult ne(Object value);
 		
 		/**
-		 * Greater Than Predicate with given value
+		 * Appends greater than predicate with given value
 		 */
 		CollectionFilterResult gt(Object value);
 		
 		/**
-		 * Greater Than or Equal Predicate with given value
+		 * Appends greater or equal than predicate with given value
 		 */
 		CollectionFilterResult gte(Object value);
 		
 		/**
-		 * Less Than Predicate with given value
+		 * Appends less than predicate with given value
 		 */
 		CollectionFilterResult lt(Object value);
 		
 		/**
-		 * Less Than or Equal Predicate with given value
+		 * Appends less or equal than predicate with given value
 		 */
 		CollectionFilterResult lte(Object value);
 		
 		/**
-		 * In Predicate with given values
+		 * Appends is in predicate with given value
+		 *
+		 * Equivalent of calling .eq(value) for each {@code List} value
 		 */
-		CollectionFilterResult isIn(Object values);
+		CollectionFilterResult isIn(List<Object> values);
 		
 		/**
-		 * In Predicate with given values
+		 * Appends is not in predicate with given value
+		 *
+		 * Equivalent of calling .ne(value) for each {@code List} value
 		 */
-		CollectionFilterResult isNotIn(Object values);
+		CollectionFilterResult isNotIn(List<Object> values);
 		
 		/**
-		 * Null Predicate
+		 * Appends is null predicate with given value
+		 *
+		 * Equivalent of calling .eq(null)
 		 */
 		CollectionFilterResult isNull();
 		
 		/**
-		 * Not Null Predicate
+		 * Appends is not null predicate with given value
+		 *
+		 * Equivalent of calling .ne(null)
 		 */
 		CollectionFilterResult isNotNull();
 	}
@@ -182,58 +179,60 @@ public inherited sharing class Collection {
 	public interface CollectionFilterResult {
 		
 		/**
-		 * Chains mapping operation with all previous filtering calls
-		 *
-		 * @return
+		 * Chains next operation after all previous filtering calls
 		 */
-		CollectionMap mapBy();
-		
-		/**
-		 * Chains grouping operation with all previous filtering calls
-		 *
-		 * @return
-		 */
-		CollectionGroup groupBy();
+		CollectionFilterChain then();
 		
 		/**
 		 * Chains next filtering predicate with AND condition
-		 *
-		 * @return
 		 */
 		CollectionFilter andAlso();
 		
 		/**
 		 * Chains next filtering predicate with OR condition
-		 *
-		 * @return
 		 */
 		CollectionFilter orElse();
 		
 		/**
-		 * Returns List containing results of all previous filtering calls
+		 * Returns list containing results of all previous filtering calls
 		 *
-		 * @return filtered SObject List
+		 * @return filtered {@code List<SObject>}
 		 */
 		List<SObject> get();
 		
 		/**
-		 * Returns List containing results of all previous filtering calls
+		 * Returns list limited in size to {@param resultLimit}, containing results of all previous filtering calls
 		 *
 		 * @param resultLimit
 		 *
-		 * @return filtered SObject List
+		 * @return filtered {@code List<SObject>}
 		 */
 		List<SObject> get(Long resultLimit);
 		
 		/**
 		 * Returns first found result of all previous filtering calls
 		 *
-		 * @return filtered SObject
+		 * @return filtered {@code SObject}
 		 */
 		SObject getFirst();
 	}
 	
-	private class CollectionFilterImpl implements CollectionFilterResult, CollectionFilter, CollectionFilterPredicate {
+	public interface CollectionFilterChain {
+		
+		/**
+		 * Chains mapping operation after filtering operation
+		 */
+		CollectionReduce reduce();
+		
+		/**
+		 * Chains grouping operation after filtering operation
+		 */
+		CollectionGroup group();
+	}
+	
+	@TestVisible
+	private class CollectionFilterImpl implements
+			CollectionFilterResult, CollectionFilter, CollectionFilterPredicate, CollectionFilterChain {
 		
 		private final Iterable<SObject> collection;
 		private final PredicateCollection predicateCollection;
@@ -244,11 +243,15 @@ public inherited sharing class Collection {
 			this.predicateCollection = new PredicateCollection(collection);
 		}
 		
-		public CollectionMap mapBy() {
-			return new CollectionMapImpl(collection, predicateCollection);
+		public CollectionFilterChain then() {
+			return this;
 		}
 		
-		public CollectionGroup groupBy() {
+		public CollectionReduce reduce() {
+			return new CollectionReduceImpl(collection, predicateCollection);
+		}
+		
+		public CollectionGroup group() {
 			return new CollectionGroupImpl(collection, predicateCollection);
 		}
 		
@@ -257,7 +260,7 @@ public inherited sharing class Collection {
 			return this;
 		}
 		
-		public CollectionFilterPredicate field(SObjectField field) {
+		public CollectionFilterPredicate byField(SObjectField field) {
 			this.field = field;
 			return this;
 		}
@@ -312,19 +315,19 @@ public inherited sharing class Collection {
 			return this;
 		}
 		
-		public CollectionFilterResult isIn(/*Set<Object>*/Object values) {
+		public CollectionFilterResult isIn(List<Object> values) {
 			this.predicateCollection.isIn(field, values);
 			return this;
 		}
 		
-		public CollectionFilterResult isNotIn(/*Set<Object>*/Object values) {
+		public CollectionFilterResult isNotIn(List<Object> values) {
 			this.predicateCollection.isNotIn(field, values);
 			return this;
 		}
 		
 		public SObject getFirst() {
 			List<SObject> objects = this.predicateCollection.process(1);
-			return !objects.isEmpty() ? objects[0] : null;
+			return objects.isEmpty() ? null : objects[0];
 		}
 		
 		public List<SObject> get() {
@@ -336,6 +339,7 @@ public inherited sharing class Collection {
 		}
 	}
 	
+	@TestVisible
 	private class CollectionGroupImpl implements CollectionGroup, CollectionGroupResult {
 		
 		private final Iterable<SObject> collection;
@@ -352,7 +356,7 @@ public inherited sharing class Collection {
 			this.predicateCollection = predicateCollection;
 		}
 		
-		public CollectionGroupResult field(SObjectField field) {
+		public CollectionGroupResult byField(SObjectField field) {
 			this.field = field;
 			return this;
 		}
@@ -373,24 +377,24 @@ public inherited sharing class Collection {
 		}
 	}
 	
-	
-	private class CollectionMapImpl implements CollectionMap, CollectionMapResult {
+	@TestVisible
+	private class CollectionReduceImpl implements CollectionReduce, CollectionReduceResult {
 		
 		private final Iterable<SObject> collection;
 		private final PredicateCollection predicateCollection;
 		private SObjectField field;
 		
-		public CollectionMapImpl(Iterable<SObject> collection) {
+		public CollectionReduceImpl(Iterable<SObject> collection) {
 			this.collection = collection;
 			this.predicateCollection = new PredicateCollection(collection);
 		}
 		
-		public CollectionMapImpl(Iterable<SObject> collection, PredicateCollection predicateCollection) {
+		public CollectionReduceImpl(Iterable<SObject> collection, PredicateCollection predicateCollection) {
 			this.collection = collection;
 			this.predicateCollection = predicateCollection;
 		}
 		
-		public CollectionMapResult field(SObjectField field) {
+		public CollectionReduceResult byField(SObjectField field) {
 			this.field = field;
 			return this;
 		}
@@ -417,8 +421,9 @@ public inherited sharing class Collection {
 	}
 	
 	/**
-	 * Predicate Collection
+	 * Common implementation for collection filtered by predicates
 	 */
+	@TestVisible
 	private class PredicateCollection {
 		
 		private final Iterable<SObject> collection;
@@ -483,12 +488,12 @@ public inherited sharing class Collection {
 			return this;
 		}
 		
-		public List<SObject> process(Long valuesLimit) {
+		public List<SObject> process(Long resultLimit) {
 			final Map<SObjectField, List<PredicateNode>> fieldNodes = this.groupNodesByField();
 			final List<SObject> values = new List<SObject>();
 			final Iterator<SObject> iterator = this.collection.iterator();
 			
-			while (iterator.hasNext() && valuesLimit != 0) {
+			while (iterator.hasNext() && resultLimit != 0) {
 				SObject collectionObject = (SObject) iterator.next();
 				Boolean isMatching = true;
 				
@@ -498,22 +503,29 @@ public inherited sharing class Collection {
 				}
 				
 				for (SObjectField field : fieldNodes.keySet()) {
-					
 					if (!ignoreNonPopulatedFields) {
 						String fieldName = field.getDescribe().getName();
 						if (!populatedObjectFields.containsKey(fieldName)) {
 							throw new CollectionException(
-								'Field ' + field.getDescribe().getName() + ' seems to be not populated or does not exists');
+								'Field ' + fieldName + ' seems to be not populated or does not exists. ' +
+									'Check if passed SObject fields are valid and properly populated e.g. in SOQL statement. ' +
+									'Use ignoreNonPopulatedFields() to disable field population checks.');
 						}
 					}
-					
 					for (PredicateNode node : fieldNodes.get(field)) {
-						isMatching = processNode(collectionObject, node, isMatching);
+						Object objectFieldValue;
+						try {
+							objectFieldValue = collectionObject.get(node.field);
+						} catch (SObjectException e) {
+							throw new CollectionException(
+								'SObject does not contain ' + field.getDescribe().getName() + ' field.');
+						}
+						isMatching = processNode(objectFieldValue, node, isMatching);
 					}
 				}
 				if (isMatching) {
 					values.add(collectionObject);
-					valuesLimit--;
+					resultLimit--;
 				}
 			}
 			return values;
@@ -532,13 +544,13 @@ public inherited sharing class Collection {
 			return values;
 		}
 		
-		private Boolean processNode(SObject nodeObject, PredicateNode node, Boolean isMatchingYet) {
+		private Boolean processNode(Object objectFieldValue, PredicateNode node, Boolean isMatchingYet) {
 			Boolean isMatching;
 			if (node.operation == BooleanOperation.IS_IN ||
 				node.operation == BooleanOperation.IS_NOT_IN) {
-				isMatching = containsOperation(nodeObject, node);
+				isMatching = containsOperation(objectFieldValue, node);
 			} else {
-				isMatching = compareOperation(nodeObject, node);
+				isMatching = compareOperation(objectFieldValue, node);
 			}
 			switch on node.relation {
 				when AND_ALSO { return isMatchingYet && isMatching; }
@@ -547,8 +559,8 @@ public inherited sharing class Collection {
 			}
 		}
 		
-		private Boolean compareOperation(SObject nodeObject, PredicateNode node) {
-			final Integer result = compare(nodeObject.get(node.field), node.value);
+		private Boolean compareOperation(Object value, PredicateNode node) {
+			final Integer result = compare(value, node.value);
 			switch on node.operation {
 				when EQUAL { return result == 0; }
 				when NOT_EQUAL { return result != 0; }
@@ -560,8 +572,8 @@ public inherited sharing class Collection {
 			}
 		}
 		
-		private Boolean containsOperation(SObject nodeObject, PredicateNode node) {
-			final Boolean result = contains(node.value, nodeObject.get(node.field));
+		private Boolean containsOperation(Object collection, PredicateNode node) {
+			final Boolean result = contains(node.value, collection);
 			switch on node.operation {
 				when IS_IN { return result == true; }
 				when IS_NOT_IN { return result == false; }
@@ -569,13 +581,12 @@ public inherited sharing class Collection {
 			}
 		}
 	}
+	
 	private class PredicateNode {
 		public SObjectField field { get; set; }
 		public Object value { get; set; }
 		public BooleanOperation operation { get; set; }
 		public BooleanRelation relation { get; set; }
-		
-		public PredicateNode() { }
 		
 		public PredicateNode(SObjectField field, Object value, BooleanOperation operation, BooleanRelation relation) {
 			this.field = field;
@@ -588,15 +599,10 @@ public inherited sharing class Collection {
 	/*
 	 * Common methods
 	 */
+	
 	private static Decimal getDecimal(Object value) {
-		if (value instanceof Integer) {
-			return Decimal.valueOf((Integer)value);
-		}
-		else if (value instanceof Long) {
+		if (value instanceof Long) {
 			return Decimal.valueOf((Long)value);
-		}
-		else if (value instanceof Double) {
-			return (Decimal)value;
 		}
 		else if (value instanceof Decimal) {
 			return (Decimal)value;
@@ -609,13 +615,23 @@ public inherited sharing class Collection {
 			}
 		}
 		else {
-			throw new CollectionException('Unsupported type for Decimal');
+			throw new CollectionException('Unsupported type supplied for decimal. ' +
+				'Check if passed SObject field is either Integer, Long, Double, Decimal or proper String.');
 		}
 	}
 	
 	private static Integer compare(Object first, Object second) {
-		if (second == null) {
-			return compareNulls(first, second);
+		if (first instanceof Id && second instanceof Id) {
+			return compareIds((Id)first, (Id)second);
+		}
+		else if (first instanceof String && second instanceof String) {
+			return compareStrings((String)first, (String)second);
+		}
+		else if (first instanceof Long && second instanceof Long) {
+			return compareLongs((Long)first, (Long)second);
+		}
+		else if (first instanceof Decimal && second instanceof Decimal) {
+			return compareDecimals((Decimal)first, (Decimal)second);
 		}
 		else if (first instanceof Boolean && second instanceof Boolean) {
 			return compareBooleans((Boolean)first, (Boolean)second);
@@ -626,68 +642,35 @@ public inherited sharing class Collection {
 		else if (first instanceof Datetime && second instanceof Datetime) {
 			return compareDateTimes((Datetime)first, (Datetime)second);
 		}
-		else if (first instanceof Decimal && second instanceof Decimal) {
-			return compareDecimals((Decimal)first, (Decimal)second);
-		}
-		else if (first instanceof Double && second instanceof Double) {
-			return compareDoubles((Double)first, (Double)second);
-		}
-		else if (first instanceof Id && second instanceof Id) {
-			return compareIds((Id)first, (Id)second);
-		}
-		else if (first instanceof Integer && second instanceof Integer) {
-			return compareIntegers((Integer)first, (Integer)second);
-		}
-		else if (first instanceof Long && second instanceof Long) {
-			return compareLongs((Long)first, (Long)second);
-		}
-		else if (first instanceof String && second instanceof String) {
-			return compareStrings((String)first, (String)second);
-		}
 		else if (first instanceof Time && second instanceof Time) {
-			return compareTimes((Time)first, (Time)second);
+			return compareTimes((Time) first, (Time) second);
 		}
-		throw new CollectionException('Unsupported compare types, first: ' + first + ', second: ' + second);
+		else if (first == null || second == null) {
+			return compareNulls(first, second);
+		}
+		throw new CollectionException('Unsupported types supplied for compare. ' +
+			'Check if passed SObject fields and values are the same type.');
 	}
 	
-	private static Boolean contains(Object valueSet, Object value) {
-		if (valueSet instanceof Set<Boolean>) {
-			Set<Boolean> validValues = (Set<Boolean>) valueSet;
-			return validValues.contains((Boolean) value);
+	private static Boolean contains(Object values, Object value) {
+		if (values == null) {
+			return false;
 		}
-		else if (valueSet instanceof Set<Date>) {
-			Set<Date> validValues = (Set<Date>) valueSet;
-			return validValues.contains((Date) value);
+		else if (values instanceof List<Object>) {
+			List<Object> validValues = (List<Object>) values;
+			return listContains(validValues, value);
 		}
-		else if (valueSet instanceof Set<Datetime>) {
-			Set<Datetime> validValues = (Set<Datetime>) valueSet;
-			return validValues.contains((Datetime) value);
+		throw new CollectionException('Unsupported types supplied for contain. ' +
+			'Check if values passed to isIn and isNotIn predicate are Set<T> type.');
+	}
+	
+	private static Boolean listContains(List<Object> objects, Object o) {
+		for (Object obj : objects) {
+			if (obj.equals(o)) {
+				return true;
+			}
 		}
-		else if (valueSet instanceof Set<Decimal>) {
-			Set<Decimal> validValues = (Set<Decimal>) valueSet;
-			return validValues.contains((Decimal) value);
-		}
-		else if (valueSet instanceof Set<Double>) {
-			Set<Double> validValues = (Set<Double>) valueSet;
-			return validValues.contains((Double) value);
-		}
-		else if (valueSet instanceof Set<Id>) {
-			Set<Id> validValues = (Set<Id>) valueSet;
-			return validValues.contains((Id) value);
-		}
-		else if (valueSet instanceof Set<Integer>) {
-			Set<Integer> validValues = (Set<Integer>) valueSet;
-			return validValues.contains((Integer) value);
-		}
-		else if (valueSet instanceof Set<Long>) {
-			Set<Long> validValues = (Set<Long>) valueSet;
-			return validValues.contains((Long) value);
-		}
-		else if (valueSet instanceof Set<String>) {
-			Set<String> validValues = (Set<String>) valueSet;
-			return validValues.contains((String) value);
-		}
-		throw new CollectionException('Unsupported contain type, must be instance of Set');
+		return false;
 	}
 	
 	private static Integer compareNulls(Object a, Object b) { return (a == null && b == null) ? 0 : (a == null ? 1 : -1); }
@@ -696,9 +679,7 @@ public inherited sharing class Collection {
 	private static Integer compareTimes(Time a, Time b) { return (a == b) ? 0 : (a > b ? 1 : -1); }
 	private static Integer compareDateTimes(Datetime a, Datetime b) { return (a == b) ? 0 : (a > b ? 1 : -1); }
 	private static Integer compareDecimals(Decimal a, Decimal b) { return (a == b) ? 0 : (a > b ? 1 : -1); }
-	private static Integer compareDoubles(Double a, Double b) { return (a == b) ? 0 : (a > b ? 1 : -1); }
 	private static Integer compareIds(Id a, Id b) { return (a == b) ? 0 : (a > b ? 1 : -1); }
-	private static Integer compareIntegers(Integer a, Integer b) { return (a == b) ? 0 : (a > b ? 1 : -1); }
 	private static Integer compareLongs(Long a, Long b) { return (a == b) ? 0 : (a > b ? 1 : -1); }
 	private static Integer compareStrings(String a, String b) { return (a == b) ? 0 : (a > b ? 1 : -1); }
 	

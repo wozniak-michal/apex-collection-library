@@ -4,10 +4,11 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_eq_then_map_sum() {
 		Decimal sum = Collection.of(getList())
-			.filterBy()
-			.field(Account.Name).eq('Foo')
-			.mapBy()
-			.field(Account.AnnualRevenue)
+			.filter()
+			.byField(Account.Name).eq('Foo')
+			.then()
+			.reduce()
+			.byField(Account.AnnualRevenue)
 			.sum();
 		System.assertEquals(310.0, sum);
 	}
@@ -15,11 +16,11 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_lt_then_map_average() {
 		Decimal average = Collection.of(getList())
-			.filterBy()
-			.field(Account.AnnualRevenue)
-			.lt(100)
-			.mapBy()
-			.field(Account.AnnualRevenue)
+			.filter()
+			.byField(Account.AnnualRevenue).lt(100)
+			.then()
+			.reduce()
+			.byField(Account.AnnualRevenue)
 			.average();
 		System.assertEquals(60.0, average);
 	}
@@ -28,8 +29,8 @@ private class CollectionTest {
 	@IsTest
 	static void should_group_by_field() {
 		Map<Object, List<Account>> found = Collection.of(getList())
-			.groupBy()
-			.field(Account.Name)
+			.group()
+			.byField(Account.Name)
 			.get();
 		System.assertEquals(2, found.keySet().size());
 		for (Object accountName : found.keySet()) {
@@ -45,11 +46,12 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_then_group_by_field() {
 		Map<Object, List<Account>> found = Collection.of(getList())
-			.filterBy()
+			.filter()
 			.ignoreNonPopulatedFields()
-			.field(Account.BillingStreet).isNotNull()
-			.groupBy()
-			.field(Account.BillingStreet)
+			.byField(Account.BillingStreet).isNotNull()
+			.then()
+			.group()
+			.byField(Account.BillingStreet)
 			.get();
 		System.assertEquals(2, found.keySet().size());
 		for (Object accountBillingStreet : found.keySet()) {
@@ -65,8 +67,8 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_single_field_eq() {
 		List<Account> found = Collection.of(getList())
-			.filterBy()
-			.field(Account.Name).eq('Foo')
+			.filter()
+			.byField(Account.Name).eq('Foo')
 			.get();
 		System.assertEquals(3, found.size());
 		for (Account account : found) {
@@ -77,8 +79,8 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_single_field_is_null() {
 		List<Account> found = Collection.of(getList())
-			.filterBy()
-			.field(Account.Id).isNull()
+			.filter()
+			.byField(Account.Id).isNull()
 			.get();
 		System.assertEquals(3, found.size());
 		for (Account account : found) {
@@ -89,8 +91,8 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_single_field_is_not_null() {
 		List<Account> found = Collection.of(getList())
-			.filterBy()
-			.field(Account.Id).isNotNull()
+			.filter()
+			.byField(Account.Id).isNotNull()
 			.get();
 		System.assertEquals(3, found.size());
 		for (Account account : found) {
@@ -100,10 +102,10 @@ private class CollectionTest {
 	
 	@IsTest
 	static void should_filter_single_field_in() {
-		Set<Decimal> values = new Set<Decimal> { 60, 100 };
+		List<Decimal> values = new List<Decimal> { 60, 100 };
 		List<Account> found = Collection.of(getList())
-			.filterBy()
-			.field(Account.AnnualRevenue).isIn(values)
+			.filter()
+			.byField(Account.AnnualRevenue).isIn(values)
 			.get();
 		System.assertEquals(4, found.size());
 		for (Account account : found) {
@@ -113,10 +115,10 @@ private class CollectionTest {
 	
 	@IsTest
 	static void should_filter_single_field_not_in() {
-		Set<String> values = new Set<String> { 'Foo' };
+		List<String> values = new List<String> { 'Foo' };
 		List<Account> found = Collection.of(getList())
-			.filterBy()
-			.field(Account.Name).isNotIn(values)
+			.filter()
+			.byField(Account.Name).isNotIn(values)
 			.get();
 		System.assertEquals(3, found.size());
 		for (Account account : found) {
@@ -127,10 +129,10 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_multiple_fields_or() {
 		List<Account> found = Collection.of(getList())
-			.filterBy()
-			.field(Account.AnnualRevenue).eq(60)
+			.filter()
+			.byField(Account.AnnualRevenue).eq(60)
 			.orElse()
-			.field(Account.AnnualRevenue).eq(150)
+			.byField(Account.AnnualRevenue).eq(150)
 			.get();
 		System.assertEquals(4, found.size());
 		for (Account account : found) {
@@ -141,10 +143,10 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_multiple_fields_and() {
 		List<Account> found = Collection.of(getList())
-			.filterBy()
-			.field(Account.Name).eq('Bar')
+			.filter()
+			.byField(Account.Name).eq('Bar')
 			.andAlso()
-			.field(Account.AnnualRevenue).gte(100)
+			.byField(Account.AnnualRevenue).gte(100)
 			.get();
 		System.assertEquals(2, found.size());
 		for (Account account : found) {
@@ -155,10 +157,10 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_first() {
 		Account found = (Account)Collection.of(getList())
-			.filterBy()
-			.field(Account.Name).eq('Bar')
+			.filter()
+			.byField(Account.Name).eq('Bar')
 			.andAlso()
-			.field(Account.AnnualRevenue).eq(60)
+			.byField(Account.AnnualRevenue).eq(60)
 			.getFirst();
 		System.assertNotEquals(null, found);
 		System.assert(found.Name == 'Bar' && found.AnnualRevenue == 60 && found.Website == 'http://website.com');
@@ -167,8 +169,8 @@ private class CollectionTest {
 	@IsTest
 	static void should_filter_limit() {
 		List<Account> found = Collection.of(getList())
-			.filterBy()
-			.field(Account.AnnualRevenue).gt(60)
+			.filter()
+			.byField(Account.AnnualRevenue).gt(60)
 			.get(3);
 		System.assertEquals(3, found.size());
 		for (Account account : found) {
@@ -179,8 +181,8 @@ private class CollectionTest {
 	@IsTest
 	static void should_map_sum_field() {
 		Decimal sum = Collection.of(getList())
-			.mapBy()
-			.field(Account.AnnualRevenue)
+			.reduce()
+			.byField(Account.AnnualRevenue)
 			.sum();
 		
 		System.assertEquals(620.0, sum);
@@ -189,57 +191,11 @@ private class CollectionTest {
 	@IsTest
 	static void should_map_average_field() {
 		Decimal average = Collection.of(getList())
-			.mapBy()
-			.field(Account.AnnualRevenue)
+			.reduce()
+			.byField(Account.AnnualRevenue)
 			.average();
 		
 		System.assertEquals(103.333333333333333333333333333333, average);
-	}
-	
-	@IsTest
-	static void should_throw_field_not_supported_for_sum() {
-		try {
-			Collection.of(getList())
-				.mapBy()
-				.field(Account.Name)
-				.sum();
-		} catch (Exception e) {
-			System.assert(e.getMessage().contains('Invalid string format for Decimal'));
-		}
-	}
-	
-	@IsTest
-	static void should_throw_field_not_populated_or_not_exist_collection_exception() {
-		try {
-			Collection.of(getList()).filterBy()
-				.field(Account.Fax).isNotNull()
-				.get();
-		} catch (Exception e) {
-			System.assertEquals('Field Fax seems to be not populated or does not exists', e.getMessage());
-		}
-	}
-	
-	@IsTest
-	static void should_throw_field_not_populated_collection_exception() {
-		try {
-			Collection.of(getList()).filterBy()
-				.field(Case.CaseNumber).isNotNull()
-				.get();
-		} catch (Exception e) {
-			System.assertEquals('Field CaseNumber seems to be not populated or does not exists', e.getMessage());
-		}
-	}
-	
-	@IsTest
-	static void should_throw_field_does_not_belong_sobject_exception() {
-		try {
-			Collection.of(getList()).filterBy()
-				.ignoreNonPopulatedFields()
-				.field(Case.CaseNumber).isNotNull()
-				.get();
-		} catch (Exception e) {
-			System.assertEquals('Case.CaseNumber does not belong to SObject type Account', e.getMessage());
-		}
 	}
 	
 	@IsTest
@@ -251,37 +207,278 @@ private class CollectionTest {
 		System.assertEquals(accountList.size(), underlyingAccountList.size());
 	}
 	
+	/*
+	 * Exception Cases
+	 */
+	
+	
+	@IsTest
+	static void should_throw_field_not_supported_for_sum() {
+		try {
+			Collection.of(getList())
+				.reduce()
+				.byField(Account.Name)
+				.sum();
+		} catch (Collection.CollectionException e) {
+			System.assert(e.getMessage().contains('Invalid string format for Decimal'));
+		}
+	}
+	
+	@IsTest
+	static void should_throw_field_not_populated_or_not_exist_collection_exception() {
+		try {
+			Collection.of(getList()).filter()
+				.byField(Account.Fax).isNotNull()
+				.get();
+		} catch (Collection.CollectionException e) {
+			System.assert(e.getMessage().contains('seems to be not populated or does not exists'));
+		}
+	}
+	
+	@IsTest
+	static void should_throw_field_not_populated_collection_exception() {
+		try {
+			Collection.of(getList()).filter()
+				.byField(Case.CaseNumber).isNotNull()
+				.get();
+		} catch (Collection.CollectionException e) {
+			System.assert(e.getMessage().contains('seems to be not populated or does not exists'));
+		}
+	}
+	
+	@IsTest
+	static void should_throw_field_does_not_belong_sobject_exception() {
+		try {
+			Collection.of(getList()).filter()
+				.ignoreNonPopulatedFields()
+				.byField(Case.CaseNumber).isNotNull()
+				.get();
+		} catch (Collection.CollectionException e) {
+			System.assert(e.getMessage().contains('SObject does not contain'));
+		}
+	}
+	
+	@IsTest
+	static void should_throw_unsupported_types_supplied_for_compare_exception() {
+		try {
+			Collection.of(getList()).filter()
+				.byField(Account.Id).eq(1)
+				.get();
+		} catch (Collection.CollectionException e) {
+			System.assert(e.getMessage().contains('Unsupported types supplied for compare'));
+		}
+	}
+	
+	/*
+	 * Performance Tests
+	 */
+	
 	@IsTest
 	static void performance_test_ignoring_non_populated_field_enabled() {
-		Collection.of(getLargeList()).filterBy()
+		Collection.of(getLargeList()).filter()
 			.ignoreNonPopulatedFields()
-			.field(Account.Name).eq('A')
+			.byField(Account.Name).eq('A')
 			.andAlso()
-			.field(Account.AnnualRevenue).eq(0)
+			.byField(Account.AnnualRevenue).eq(0)
 			.andAlso()
-			.field(Account.Website).eq('C')
+			.byField(Account.Website).eq('C')
 			.andAlso()
-			.field(Account.BillingStreet).eq('D')
+			.byField(Account.BillingStreet).eq('D')
 			.andAlso()
-			.field(Account.BillingCity).eq('E')
+			.byField(Account.BillingCity).eq('E')
 			.get();
 	}
 	
 	@IsTest
 	static void performance_test_ignoring_non_populated_field_disabled() {
-		Collection.of(getLargeList()).filterBy()
-			.field(Account.Name).eq('A')
+		Collection.of(getLargeList()).filter()
+			.byField(Account.Name).eq('A')
 			.andAlso()
-			.field(Account.AnnualRevenue).eq(0)
+			.byField(Account.AnnualRevenue).eq(0)
 			.andAlso()
-			.field(Account.Website).eq('C')
+			.byField(Account.Website).eq('C')
 			.andAlso()
-			.field(Account.BillingStreet).eq('D')
+			.byField(Account.BillingStreet).eq('D')
 			.andAlso()
-			.field(Account.BillingCity).eq('E')
+			.byField(Account.BillingCity).eq('E')
 			.get();
 	}
-
+	
+	/*
+	 * PredicateCollection Tests
+	 */
+	
+	@IsTest
+	static void test_equal_predicate() {
+		// given
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.eq(Account.Name, 'Foo');
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(3, accounts.size());
+		for (Account account : accounts) {
+			System.assertEquals(account.Name, 'Foo');
+		}
+	}
+	
+	@IsTest
+	static void test_not_equal_predicate() {
+		// given
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.ne(Account.Name, 'Foo');
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(3, accounts.size());
+		for (Account account : accounts) {
+			System.assertEquals(account.Name, 'Bar');
+		}
+	}
+	
+	@IsTest
+	static void test_greater_than_predicate() {
+		// given
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.gt(Account.AnnualRevenue, 100);
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(2, accounts.size());
+		for (Account account : accounts) {
+			System.assert(account.AnnualRevenue > 100);
+		}
+	}
+	
+	@IsTest
+	static void test_greater_or_equal_than_predicate() {
+		// given
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.gte(Account.AnnualRevenue, 100);
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(4, accounts.size());
+		for (Account account : accounts) {
+			System.assert(account.AnnualRevenue >= 100);
+		}
+	}
+	
+	@IsTest
+	static void test_less_than_predicate() {
+		// given
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.lt(Account.AnnualRevenue, 100);
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(2, accounts.size());
+		for (Account account : accounts) {
+			System.assert(account.AnnualRevenue < 100);
+		}
+	}
+	
+	@IsTest
+	static void test_less_or_equal_than_predicate() {
+		// given
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.lte(Account.AnnualRevenue, 100);
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(4, accounts.size());
+		for (Account account : accounts) {
+			System.assert(account.AnnualRevenue <= 100);
+		}
+	}
+	
+	@IsTest
+	static void test_is_in_list_predicate() {
+		// given
+		List<Decimal> revenues = new List<Decimal> { 60.0, 100.0 };
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.isIn(Account.AnnualRevenue, revenues);
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(4, accounts.size());
+		for (Account account : accounts) {
+			System.assert(account.AnnualRevenue == 60.0 || account.AnnualRevenue == 100.0);
+		}
+	}
+	
+	@IsTest
+	static void test_is_not_in_list_predicate() {
+		// given
+		List<Decimal> revenues = new List<Decimal> { 60.0, 100.0 };
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.isNotIn(Account.AnnualRevenue, revenues);
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(2, accounts.size());
+		for (Account account : accounts) {
+			System.assert(account.AnnualRevenue != 60.0 && account.AnnualRevenue != 100.0);
+		}
+	}
+	
+	@IsTest
+	static void test_and_also_predicate() {
+		// given
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.eq(Account.Id, '0011t00000L0aiN');
+		collection.andAlso();
+		collection.eq(Account.Name, 'Bar');
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(1, accounts.size());
+		for (Account account : accounts) {
+			System.assertEquals(account.Id, '0011t00000L0aiN');
+			System.assertEquals(account.Name, 'Bar');
+		}
+	}
+	
+	@IsTest
+	static void test_or_else_predicate() {
+		// given
+		Collection.PredicateCollection collection = new Collection.PredicateCollection(getList());
+		
+		// when
+		collection.eq(Account.AnnualRevenue, 60);
+		collection.orElse();
+		collection.eq(Account.AnnualRevenue, 100);
+		
+		// then
+		List<Account> accounts = collection.process(-1);
+		System.assertEquals(4, accounts.size());
+		for (Account account : accounts) {
+			System.assert(account.AnnualRevenue == 60 || account.AnnualRevenue == 100);
+		}
+	}
+	
+	/*
+	 * Test Data
+	 */
+	
 	private static List<Account> getList() {
 		return new List<Account>{
 			new Account(Id = null,              Name = 'Foo', AnnualRevenue = 100, Website = 'http://test.eu'),
@@ -305,32 +502,5 @@ private class CollectionTest {
 			));
 		}
 		return accounts;
-	}
-	
-	/*
-	 * Predicates Tests
-	 */
-	@IsTest
-	static void test_equal() {
-		List<Account> accounts = Collection.of(
-			new List<Account> { new Account(Name = 'A'), new Account(Name = 'B') }
-		).filterBy()
-			.field(Account.Name).eq('B')
-			.get();
-		
-		System.assertEquals(1, accounts.size());
-		System.assertEquals('B', accounts[0].Name);
-	}
-	
-	@IsTest
-	static void test_not_equal() {
-		List<Account> accounts = Collection.of(
-			new List<Account> { new Account(Name = 'A'), new Account(Name = 'B') }
-		).filterBy()
-			.field(Account.Name).ne('A')
-			.get();
-		
-		System.assertEquals(1, accounts.size());
-		System.assertEquals('B', accounts[0].Name);
 	}
 }
