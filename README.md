@@ -15,7 +15,7 @@ Latest version: **0.0.4**
 Filter accounts whose `Name` field equals `Foo`
 ```$xslt
 List<Account> filteredAccounts = Collection.of(accountList)
-	.filterBy()
+	.filter()
 	.byField(Account.Name).eq('Foo')
 	.get();
 ```
@@ -23,7 +23,7 @@ List<Account> filteredAccounts = Collection.of(accountList)
 Filter accounts whose `Name` field equals `Foo` and field `AnnualRevenue` is greater or equal than `150000`
 ```$xslt
 List<Account> filteredAccounts = Collection.of(accountList)
-	.filterBy()
+	.filter()
 	.byField(Account.Name).eq('Foo')
 	.andAlso()
 	.byField(Account.AnnualRevenue).gte(150000)
@@ -33,7 +33,7 @@ List<Account> filteredAccounts = Collection.of(accountList)
 Get first account which `Name` field equals `Bar` or `Foo`
 ```$xslt
 List<Account> filteredAccounts = Collection.of(accountList)
-	.filterBy()
+	.filter()
 	.byField(Account.Name).eq('Bar')
 	.orElse()
 	.byField(Account.Name).eq('Foo')
@@ -43,7 +43,7 @@ List<Account> filteredAccounts = Collection.of(accountList)
 Get top 10 accounts which `AnnualRevenue` field is less or equal than `100000`
 ```$xslt
 List<Account> filteredAccounts = Collection.of(accountList)
-	.filterBy()
+	.filter()
 	.byField(Account.Name).lte(100000)
 	.get(10);
 ```
@@ -51,7 +51,7 @@ List<Account> filteredAccounts = Collection.of(accountList)
 Ignore non populated `Website` field (effectively treating them as `null`)
 ```$xslt
 List<Account> filteredAccounts = Collection.of(accountList)
-	.filterBy()
+	.filter()
 	.ignoreNonPopulatedFields()
 	.byField(Account.Website).isNull()
 	.get();
@@ -61,7 +61,7 @@ List<Account> filteredAccounts = Collection.of(accountList)
 Group accounts by `Active__c` `Boolean` field
 ```$xslt
 Map<Object, List<Account>> groupedAccounts = Collection.of(accountList)
-	.groupBy()
+	.group()
 	.byField(Account.Active__c)
 	.get();
 ```
@@ -102,43 +102,6 @@ Map<Object, List<Account>> found = Collection.of(accountList)
 	.then()
 	.group()
 	.byField(Account.BillingCity)
-	.get();
-```
-
-### Mapping
-Sum accounts `AnnualRevenue` field values
-```$xslt
-Decimal sum = Collection.of(getList())
-	.mapBy()
-	.field(Account.AnnualRevenue)
-	.sum();
-```
-
-Average accounts `AnnualRevenue` field values
-```$xslt
-Decimal sum = Collection.of(getList())
-	.mapBy()
-	.field(Account.AnnualRevenue)
-	.average();
-```
-
-### Operations chaining
-Filter accounts whose `Name` field equals to `Foo` then sum matching records `AnnualRevenue` field
-```$xslt
-Decimal sum = Collection.of(getList())
-	.filterBy()
-	.field(Account.Name).eq('Foo')
-	.mapBy()
-	.field(Account.AnnualRevenue)
-	.sum();
-```
-Filter accounts whose `AnnualRevenue` field is greater or equal than `100000` then group matching records by `BillingCity` field
-```$xslt
-Map<Object, List<Account>> found = Collection.of(getList())
-	.filterBy()
-	.field(Account.AnnualRevenue).gte(100000)
-	.groupBy()
-	.field(Account.BillingCity)
 	.get();
 ```
 
