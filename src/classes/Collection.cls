@@ -534,12 +534,11 @@ public inherited sharing class Collection {
 		private Map<SObjectField, List<PredicateNode>> groupNodesByField() {
 			final Map<SObjectField, List<PredicateNode>> values = new Map<SObjectField, List<PredicateNode>>();
 			for (PredicateNode predicateNode : predicateNodes) {
-				List<PredicateNode> nodes = values.get(predicateNode.field);
-				if (nodes == null) {
-					nodes = new List<PredicateNode>();
-					values.put(predicateNode.field, nodes);
+				if (values.containsKey(predicateNode.field) {
+					values.get(predicateNode.field).add(predicateNode);
+				} else {
+					values.put(predicateNode.field, new List<PredicateNode>{ predicateNode });
 				}
-				nodes.add(predicateNode);
 			}
 			return values;
 		}
